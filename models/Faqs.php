@@ -29,4 +29,13 @@ class Faqs extends Model
         'key',
         'faqs'
     ];
+
+    /**
+     * Defines JSONable fields
+     *
+     * @var array
+     */
+    public $jsonable = [
+        'faqs'
+    ];
 }

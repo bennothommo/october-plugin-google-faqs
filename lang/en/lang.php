@@ -20,4 +20,8 @@ return [
             ]
         ],
     ],
+    'hints' => [
+        'faqs' => 'You may use this section to add frequently-asked questions to your Google (or other JSON-LD
+            compatible) search results. These generally appear underneath the current page\'s listing in the results.'
+    ]
 ];

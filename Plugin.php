@@ -1,11 +1,8 @@
 <?php
 namespace BennoThommo\GoogleFaqs;
 
-use BennoThommo\GoogleFaqs\Models\Faqs;
+use BennoThommo\GoogleFaqs\Classes\PluginHandler;
 use System\Classes\PluginBase;
-use System\Classes\PluginManager;
-use Event;
-use Lang;
 
 class Plugin extends PluginBase
 {
@@ -40,130 +37,30 @@ class Plugin extends PluginBase
      */
     public function boot()
     {
-        // Attach to forms
-        Event::listen('backend.form.extendFields', function ($widget) {
-            $validControllers = [
-                'Cms\Controllers\Index',
-                'RainLab\Pages\Controllers\Index'
-            ];
-            $widgetController = get_class($widget->getController());
+        $pluginHandler = PluginHandler::instance();
 
-            if (!in_array($widgetController, $validControllers)) {
-                return;
-            }
+        // Register controller handlers
 
-            $this->extendFields($widgetController, $widget);
-        });
-
-        $this->extendModels();
-    }
-
-    protected function extendFields(string $controller, \Backend\Widgets\Form $widget)
-    {
-        if ($controller === 'Cms\Controllers\Index') {
-            $this->extendCmsPagesAndLayoutsFields($widget);
-        } elseif ($controller === 'RainLab\Pages\Controllers\Index') {
-            $this->extendRainLabPagesFields($widget);
-        }
-    }
-
-    protected function extendCmsPagesAndLayoutsFields(\Backend\Widgets\Form $widget)
-    {
-        $validModels = [
+        // CMS module
+        $pluginHandler->registerController(
+            'Cms\Controllers\Index',
+            'BennoThommo\GoogleFaqs\Classes\Handlers\Controllers\CmsPages'
+        );
+        $pluginHandler->registerModel(
             'Cms\Classes\Page',
-            'Cms\Classes\Layout'
-        ];
-        $model = get_class($widget->model);
+            'BennoThommo\GoogleFaqs\Classes\Handlers\Models\CmsPage'
+        );
 
-        if (!in_array($model, $validModels)) {
-            return;
-        }
-
-        if ($widget->isNested) {
-            return;
-        }
-
-        $this->injectFields($widget);
-    }
-
-    protected function extendRainLabPagesFields(\Backend\Widgets\Form $widget)
-    {
-        $validModels = [
+        // RainLab.Pages
+        $pluginHandler->registerController(
+            'RainLab\Pages\Controllers\Index',
+            'BennoThommo\GoogleFaqs\Classes\Handlers\Controllers\RainLabPages'
+        );
+        $pluginHandler->registerModel(
             'RainLab\Pages\Classes\Page',
-        ];
-        $model = get_class($widget->model);
+            'BennoThommo\GoogleFaqs\Classes\Handlers\Models\RainLabPage'
+        );
 
-        if (!in_array($model, $validModels)) {
-            return;
-        }
-
-        if ($widget->isNested) {
-            return;
-        }
-
-        $this->injectFields($widget);
-    }
-
-    protected function injectFields(\Backend\Widgets\Form $widget)
-    {
-        $widget->addTabFields([
-            'bennothommo_googlefaqs_faqs' => [
-                'type' => 'repeater',
-                'tab' => Lang::get('bennothommo.googlefaqs::lang.tabs.googleFaqs'),
-                'titleFrom' => 'question',
-                'prompt' => Lang::get('bennothommo.googlefaqs::lang.fields.faqs.prompt'),
-                'form' => [
-                    'fields' => [
-                        'question' => [
-                            'type' => 'textarea',
-                            'label' => Lang::get('bennothommo.googlefaqs::lang.fields.faqs.fields.question.label'),
-                            'size' => 'small',
-                            'span' => 'left',
-                        ],
-                        'answer' => [
-                            'type' => 'textarea',
-                            'label' => Lang::get('bennothommo.googlefaqs::lang.fields.faqs.fields.answer.label'),
-                            'size' => 'small',
-                            'span' => 'right',
-                        ]
-                    ]
-                ]
-            ]
-        ]);
-    }
-
-    protected function extendModels()
-    {
-        if (PluginManager::instance()->exists('RainLab.Pages')) {
-            \RainLab\Pages\Classes\Page::extend(function ($model) {
-                $model->bindEvent('model.afterSave', function () use ($model) {
-                    $this->afterSave($model);
-                });
-            });
-        }
-    }
-
-    protected function afterSave($model)
-    {
-        $class = get_class($model);
-        $key = $model->id;
-        $faqs = post('bennothommo_googlefaqs_faqs');
-
-        // Find record for model
-        $faqRecord = Faqs::where([
-            'model' => $class,
-            'key' => $key
-        ])->first();
-
-        if (!$faqRecord) {
-            $faqRecord = Faqs::create([
-                'model' => $class,
-                'key' => $key,
-                'faqs' => json_encode(array_values($faqs))
-            ]);
-        } else {
-            $faqRecord->faqs = json_encode(array_values($faqs));
-            $faqRecord->save();
-        }
+        $pluginHandler->attachEvents();
     }
 }
