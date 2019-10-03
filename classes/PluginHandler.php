@@ -54,7 +54,7 @@ class PluginHandler
             );
         }
 
-        $this->controllers[$controllerClass] = $handler;
+        $this->controllers[$controllerClass] = new $handler;
     }
 
     public function registerModel(string $modelClass, string $handler)
@@ -72,7 +72,7 @@ class PluginHandler
             );
         }
 
-        $this->models[$modelClass] = $handler;
+        $this->models[$modelClass] = new $handler;
     }
 
     /**
@@ -89,7 +89,7 @@ class PluginHandler
 
                 foreach ($this->controllers as $controller => $handler) {
                     if ($controller === $widgetController) {
-                        $foundHandler = new $handler;
+                        $foundHandler = $handler;
                         break;
                     }
                 }
@@ -100,19 +100,24 @@ class PluginHandler
 
                 $foundHandler->extendFields($formWidget);
             });
+
+            // Allow custom events to be attached
+            foreach ($this->controllers as $handler) {
+                if (method_exists($handler, 'attachEvents')) {
+                    $handler->attachEvents();
+                }
+            }
         }
 
         if (count($this->models)) {
             foreach ($this->models as $model => $handler) {
                 $model::extend(function ($model) use ($handler) {
                     $model->bindEvent('model.afterFetch', function () use ($model, $handler) {
-                        $handlerInstance = new $handler;
-                        $handlerInstance->afterFetch($model);
+                        $handler->afterFetch($model);
                     });
 
                     $model->bindEvent('model.afterSave', function () use ($model, $handler) {
-                        $handlerInstance = new $handler;
-                        $handlerInstance->afterSave($model);
+                        $handler->afterSave($model);
                     });
                 });
             }
