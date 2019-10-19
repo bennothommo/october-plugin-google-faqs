@@ -1,3 +1,4 @@
 1.0.0:
     - Initial version of the Google FAQs plugin.
     - create_googlefaqs_table.php
+1.0.1: Changed the event that FAQ content is injected into, as the Static Pages plugin halts the original event.
