@@ -32,9 +32,10 @@ class CmsPages extends ControllerHandler
 
     public function attachEvents()
     {
-        Event::listen('cms.page.beforeRenderPage', function (
+        Event::listen('cms.page.beforeDisplay', function (
             \Cms\Classes\Controller $controller,
-            \Cms\Classes\Page $page
+            string $url = null,
+            \Cms\Classes\Page $page = null
         ) {
             $faqs = [];
 
